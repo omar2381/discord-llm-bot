@@ -593,3 +593,13 @@ _(The agent records any changes from this plan here, with a one-line reason.)_
 - 2026-10-05: Plan moved to a new repository, `discord-llm-bot`. GitHub cannot detach a
   fork, so the old `discord-bot-tests` fork was deleted rather than converted. The
   intro and Phase 0 step 1 were reworded to match an empty starting repository.
+- 2026-10-05 (Phase 0): `check:ai` script left out of `package.json` until Phase 5 creates
+  `scripts/check-ai.js`, so no script points at a missing file.
+- 2026-10-05 (Phase 0): `dev` script is `node --watch src/index.js` without
+  `--env-file=.env`. The bot loads `.env` itself via dotenv, and `--env-file` crashes
+  when `.env` doesn't exist yet.
+- 2026-10-05 (Phase 0): `test` script is `node --test "test/**/*.test.js"` (explicit glob)
+  so helper files in `test/` aren't run as tests. Shared fakes live in `test/fakes.js`.
+- 2026-10-05 (Phase 0): Added `src/paths.js` (shared folder paths for the bot and the deploy
+  script) and `src/util/replies.js` (the "reply or followUp, ephemeral" helper).
+  Cooldowns (`cooldownSeconds`) are enforced in the interaction router.

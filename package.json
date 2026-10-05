@@ -1,0 +1,36 @@
+{
+  "name": "discord-llm-bot",
+  "version": "0.1.0",
+  "description": "A Discord bot with games, utility, moderation, welcome/roles and an optional local LLM assistant via Ollama.",
+  "private": true,
+  "license": "MIT",
+  "author": "omar2381",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "deploy:commands": "node scripts/deploy-commands.js",
+    "deploy:commands:global": "node scripts/deploy-commands.js --global",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "discord.js": "^14.27.0",
+    "dotenv": "^18.0.5",
+    "pino": "^10.4.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "pino-pretty": "^13.2.0",
+    "prettier": "^3.9.9"
+  }
+}
