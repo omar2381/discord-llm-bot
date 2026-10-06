@@ -2,6 +2,7 @@ import { Events, PermissionFlagsBits } from 'discord.js';
 import { SpamTracker, findBannedWord } from '../features/automod.js';
 import { getBannedWords, getSettings } from '../features/guildSettings.js';
 import { logAction } from '../features/modlog.js';
+import { answer, canSendIn } from '../ai/index.js';
 
 export const name = Events.MessageCreate;
 
@@ -38,7 +39,60 @@ export async function execute(message, ctx) {
     }
   }
 
-  // Phase 5 hooks AI replies in here, after moderation has had its say.
+  await maybeAnswer(message, ctx);
+}
+
+/**
+ * Reply when the bot is mentioned, or when someone replies to one of its own
+ * messages. Moderation has already had its say by this point.
+ */
+async function maybeAnswer(message, ctx) {
+  if (!ctx.ai.enabled) return;
+
+  const mentioned = message.mentions.users.has(ctx.client.user.id);
+  const repliedToBot =
+    message.reference?.messageId &&
+    (await message.channel.messages
+      .fetch(message.reference.messageId)
+      .then((replied) => replied.author.id === ctx.client.user.id)
+      .catch(() => false));
+
+  if (!mentioned && !repliedToBot) return;
+  if (!canSendIn(message.channel, message.guild.members.me)) return;
+
+  const prompt = message.content
+    .replace(new RegExp(`<@!?${ctx.client.user.id}>`, 'g'), '')
+    .trim();
+  if (!prompt) return;
+
+  await message.channel.sendTyping().catch(() => {});
+
+  const result = await answer({
+    ctx,
+    message,
+    prompt,
+    member: message.member,
+    channel: message.channel,
+    guild: message.guild,
+  });
+
+  if (result.refused) {
+    await message.reply({
+      content: result.refused,
+      allowedMentions: { repliedUser: true },
+    });
+    return;
+  }
+
+  const [first, ...rest] = result.chunks;
+  await message.reply({
+    content: first,
+    components: result.rows,
+    allowedMentions: { repliedUser: true, parse: [] },
+  });
+  for (const chunk of rest) {
+    await message.channel.send({ content: chunk, allowedMentions: { parse: [] } });
+  }
 }
 
 async function handleBannedWord(message, ctx, word) {

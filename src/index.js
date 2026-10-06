@@ -7,6 +7,7 @@ import { openDatabase } from './db/index.js';
 import { loadModules } from './util/loadModules.js';
 import { startReminderLoop } from './features/reminders.js';
 import { purgeOldGames } from './components/rps.js';
+import { createAi } from './ai/index.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -24,7 +25,8 @@ const client = new Client({
 
 const commands = new Collection();
 const components = new Collection();
-const ctx = { db, config, logger, client, commands, components };
+const ai = createAi(config);
+const ctx = { db, config, logger, client, commands, components, ai };
 
 for (const { path, module } of await loadModules(join(here, 'commands'))) {
   if (!module.data || typeof module.execute !== 'function') {
