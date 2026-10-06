@@ -5,6 +5,8 @@ import { getConfig } from './config.js';
 import { logger } from './logger.js';
 import { openDatabase } from './db/index.js';
 import { loadModules } from './util/loadModules.js';
+import { startReminderLoop } from './features/reminders.js';
+import { purgeOldGames } from './components/rps.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -29,7 +31,7 @@ for (const { path, module } of await loadModules(join(here, 'commands'))) {
     logger.warn({ path }, 'skipping command without data/execute');
     continue;
   }
-  commands.set(module.data.name, module);
+  commands.set(module.data.name, { ...module, sourcePath: path });
 }
 
 for (const { path, module } of await loadModules(join(here, 'components'))) {
@@ -52,6 +54,31 @@ for (const { path, module } of await loadModules(join(here, 'events'))) {
 
 logger.info({ commands: commands.size, components: components.size }, 'modules loaded');
 
+// Deliver reminders, including any that came due while the bot was offline.
+const stopReminders = startReminderLoop({
+  db,
+  logger,
+  async send(reminder) {
+    const channel = await client.channels.fetch(reminder.channel_id).catch(() => null);
+    const content = `<@${reminder.user_id}> reminder: ${reminder.message}`;
+    if (channel?.isTextBased()) {
+      await channel.send({
+        content,
+        allowedMentions: { users: [reminder.user_id] },
+      });
+      return;
+    }
+    // The channel is gone or unreadable; fall back to a direct message.
+    const user = await client.users.fetch(reminder.user_id);
+    await user.send(`Reminder: ${reminder.message}`);
+  },
+});
+
+// Abandoned rock-paper-scissors challenges would otherwise accumulate forever.
+purgeOldGames(db);
+const purgeTimer = setInterval(() => purgeOldGames(db), 60 * 60 * 1000);
+purgeTimer.unref?.();
+
 client.on(Events.Error, (error) => logger.error({ err: error }, 'client error'));
 process.on('unhandledRejection', (reason) =>
   logger.error({ err: reason }, 'unhandled rejection'),
@@ -62,6 +89,8 @@ function shutdown(signal) {
   if (shuttingDown) return;
   shuttingDown = true;
   logger.info({ signal }, 'shutting down');
+  stopReminders();
+  clearInterval(purgeTimer);
   client.destroy();
   db.close();
   process.exit(0);
