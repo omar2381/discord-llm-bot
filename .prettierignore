@@ -1,0 +1,7 @@
+node_modules
+data
+coverage
+package-lock.json
+reference
+PLAN.md
+README.md

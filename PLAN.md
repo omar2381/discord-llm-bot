@@ -593,3 +593,13 @@ _(The agent records any changes from this plan here, with a one-line reason.)_
 - 2026-10-05: Plan moved to a new repository, `discord-llm-bot`. GitHub cannot detach a
   fork, so the old `discord-bot-tests` fork was deleted rather than converted. The
   intro and Phase 0 step 1 were reworded to match an empty starting repository.
+- 2026-10-06: `better-sqlite3` pinned to ^13 rather than ^11. Version 11 has no prebuilt
+  binary for Node 26 and fails to compile from source on this machine; 13 installs
+  cleanly and still supports Node 22.
+- 2026-10-06: `/ping` uses `withResponse: true` instead of the removed
+  `fetchReply: true`, which discord.js 14.16 dropped.
+- 2026-10-06: Dice parsing lives in `src/features/dice.js` rather than inside the
+  command, so it can be unit tested like the other pure logic.
+- 2026-10-06: `purgeOldGames` is written and exported from `src/components/rps.js` but
+  is not yet called on a timer; wiring the hourly interval is left to the phase that
+  adds the scheduler.
