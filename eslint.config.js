@@ -14,4 +14,9 @@ export default [
       'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
+  {
+    // The landing page runs in a browser, not in Node.
+    files: ['docs/**/*.js'],
+    languageOptions: { globals: { ...globals.browser } },
+  },
 ];

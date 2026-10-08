@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>discord-llm-bot</title>
+<meta name="description" content="A Discord bot with games, moderation and an AI assistant that runs on a local model instead of a paid API.">
+<meta property="og:title" content="discord-llm-bot">
+<meta property="og:description" content="Games, moderation and an AI assistant that runs on a local model instead of a paid API.">
+<meta property="og:image" content="icon.svg">
+<meta name="theme-color" content="#4f46e5">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <img src="icon.svg" alt="">
+    <h1>discord-llm-bot</h1>
+    <p class="tagline">
+      Games, utilities and moderation for your server, plus an AI assistant that
+      runs on a local model instead of a paid API.
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary" id="invite" href="#self-host">Add to Server</a>
+      <a class="btn btn-secondary" id="repo" href="#">Source on GitHub</a>
+    </div>
+    <p class="note" id="invite-note" hidden></p>
+  </div>
+</header>
+
+<main>
+
+<section class="wrap">
+  <h2>What it does</h2>
+  <p class="section-lead">Everything except the assistant works with no AI configured at all.</p>
+  <div class="grid">
+    <div class="card">
+      <h3>Games</h3>
+      <p>Seven-way rock-paper-scissors played over buttons, dice in <code>2d6+1</code> notation, and an 8-ball.</p>
+    </div>
+    <div class="card">
+      <h3>Moderation</h3>
+      <p>Kick, ban, timeout, purge and warnings, each re-checking role hierarchy before it acts. Every action can go to a mod-log channel.</p>
+    </div>
+    <div class="card">
+      <h3>Auto-moderation</h3>
+      <p>A banned-word list that sees through stretched spellings and zero-width characters, and spam detection for bursts and repeats.</p>
+    </div>
+    <div class="card">
+      <h3>Welcome &amp; roles</h3>
+      <p>Greet new members with a message you write, hand out a role automatically, and post menus people click to pick their own roles.</p>
+    </div>
+    <div class="card">
+      <h3>Utilities</h3>
+      <p>Reminders that survive a restart, native Discord polls, server and member information.</p>
+    </div>
+    <div class="card">
+      <h3>An assistant, optionally</h3>
+      <p>Mention it and it answers. It can remember things about you, set reminders and post polls, and it asks before anything destructive.</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <h2>Commands</h2>
+  <p class="section-lead">Twenty-five in all. Moderation commands are hidden from members who cannot use them.</p>
+
+  <details class="cmd-group" open>
+    <summary>Fun</summary>
+    <ul>
+      <li><code>/rps</code> <span>Challenge someone; they accept with a button and pick in secret</span></li>
+      <li><code>/roll</code> <span>Dice, up to 100 of them, up to 1000 sides</span></li>
+      <li><code>/8ball</code> <span>The usual twenty answers</span></li>
+    </ul>
+  </details>
+
+  <details class="cmd-group">
+    <summary>Utility</summary>
+    <ul>
+      <li><code>/remind</code> <span>Set, list and cancel reminders</span></li>
+      <li><code>/poll</code> <span>A native Discord poll, 2 to 10 options</span></li>
+      <li><code>/serverinfo</code> <span>Members, channels, roles, owner, age</span></li>
+      <li><code>/userinfo</code> <span>When someone joined, and their roles</span></li>
+      <li><code>/ping</code> <span>Latency, both kinds</span></li>
+      <li><code>/help</code> <span>Everything, grouped</span></li>
+    </ul>
+  </details>
+
+  <details class="cmd-group">
+    <summary>Moderation</summary>
+    <ul>
+      <li><code>/kick</code> <span>Remove a member</span></li>
+      <li><code>/ban</code> <span>Ban, optionally deleting their recent messages</span></li>
+      <li><code>/timeout</code> <span>Stop someone talking, up to 28 days</span></li>
+      <li><code>/untimeout</code> <span>Lift it early</span></li>
+      <li><code>/purge</code> <span>Delete up to 100 messages, optionally from one person</span></li>
+      <li><code>/warn</code> <span>Record a warning and tell them</span></li>
+      <li><code>/warnings</code> <span>List or clear someone's warnings</span></li>
+      <li><code>/modlog</code> <span>Choose where actions are recorded</span></li>
+      <li><code>/automod</code> <span>Banned words and spam detection</span></li>
+    </ul>
+  </details>
+
+  <details class="cmd-group">
+    <summary>Community</summary>
+    <ul>
+      <li><code>/welcome</code> <span>Greet new members, with a preview before it goes live</span></li>
+      <li><code>/autorole</code> <span>Give everyone who joins a role</span></li>
+      <li><code>/rolemenu</code> <span>Post buttons people click to pick roles</span></li>
+    </ul>
+  </details>
+
+  <details class="cmd-group">
+    <summary>Assistant</summary>
+    <ul>
+      <li><code>/ask</code> <span>Ask it something, privately if you like</span></li>
+      <li><code>/memory</code> <span>See, delete, or stop it remembering anything about you</span></li>
+      <li><code>/ai</code> <span>Switch the assistant on or off for the server</span></li>
+    </ul>
+  </details>
+</section>
+
+<section class="wrap">
+  <h2>About the assistant</h2>
+  <p class="section-lead">
+    It is a small model running on the machine that hosts the bot. Nothing is
+    sent to OpenAI, Anthropic or anyone else, and there is no per-message cost.
+  </p>
+  <div class="callout">
+    <strong>What it will and will not do</strong>
+    <ul>
+      <li>It answers when you <strong>mention it</strong>, reply to it, or use <code>/ask</code>. It does not join conversations uninvited.</li>
+      <li>It reads the last dozen messages of the channel for context when you ask it something, and keeps none of them.</li>
+      <li>It can remember short facts about you, per server. <code>/memory view</code> shows them and <code>/memory optout</code> deletes the lot and stops it storing more.</li>
+      <li>It can set reminders and post polls on your behalf.</li>
+      <li>Anything destructive &mdash; a timeout, deleting messages, changing roles &mdash; comes back as a button only you can press, and your permissions are checked again when you do.</li>
+      <li>It is never given kick or ban, and it always acts with your permissions, never its own.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="wrap" id="self-host">
+  <h2>Run your own</h2>
+  <p class="section-lead">
+    There is no public instance: the bot is free to run because it runs on
+    hardware someone already owns. Yours can be a spare PC, a Raspberry Pi, or a
+    free ARM instance.
+  </p>
+  <ol class="steps">
+    <li><strong>Create an application</strong> in the Discord Developer Portal, copy the token, and enable the Server Members and Message Content intents.</li>
+    <li><strong>Clone and configure.</strong> Copy <code>.env.example</code> to <code>.env</code> and fill in the token, application id and your server id.</li>
+    <li><strong>Start it.</strong><pre>npm ci
+npm run deploy:commands
+npm run dev</pre></li>
+    <li><strong>Add the assistant, if you want one.</strong> Install Ollama, pull a small model, and point <code>OLLAMA_URL</code> at it. Leave it empty and everything else still works.<pre>ollama pull qwen2.5:3b
+npm run check:ai</pre></li>
+  </ol>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <a id="repo-footer" href="#">GitHub</a>
+    <a id="readme" href="#">Setup guide</a>
+    <a id="plan" href="#">Build plan</a>
+    <p>MIT licensed. Not affiliated with Discord.</p>
+  </div>
+</footer>
+
+<script src="config.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

@@ -145,6 +145,20 @@ through once it is connected:
   minutes` should offer a Confirm button to a moderator and refuse a regular
   member.
 
+## The landing page
+
+`docs/` is a static invite page, the kind bots usually have: what it does, the
+command list, what the assistant may and may not do, and how to run your own.
+
+To put it online, enable GitHub Pages on this repository with the source set to
+**main / docs**. Put your application id in `docs/config.js` and the button
+turns into a real invite link carrying the right permissions; leave it empty
+and the page points at the self-hosting steps instead, which is the honest
+default while there is no public instance.
+
+The icon is `assets/icon.svg`, with `assets/icon-512.png` for the bot's avatar
+in the Developer Portal.
+
 ## Requirements
 
 Node.js 22 or newer. SQLite is created at `./data/bot.db` on first run.
