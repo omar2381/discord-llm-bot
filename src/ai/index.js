@@ -28,6 +28,7 @@ export function createAi(config) {
     url: config.ai.url,
     model: config.ai.model,
     timeoutMs: config.ai.timeoutMs,
+    numCtx: config.ai.numCtx,
   });
   const pending = new PendingActions();
   setInterval(() => pending.sweep(), 60_000).unref?.();

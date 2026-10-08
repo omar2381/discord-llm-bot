@@ -65,7 +65,13 @@ export class SerialQueue {
   }
 }
 
-export function createOllama({ url, model, timeoutMs = 60000, maxWaiting = 10 }) {
+export function createOllama({
+  url,
+  model,
+  timeoutMs = 60000,
+  maxWaiting = 10,
+  numCtx = 4096,
+}) {
   const queue = new SerialQueue(maxWaiting);
   const endpoint = String(url).replace(/\/+$/, '');
 
@@ -101,7 +107,7 @@ export function createOllama({ url, model, timeoutMs = 60000, maxWaiting = 10 })
             ...(tools?.length ? { tools } : {}),
             stream: false,
             keep_alive: '30m',
-            options: { temperature: 0.4, num_ctx: 4096 },
+            options: { temperature: 0.4, num_ctx: numCtx },
           },
           AbortSignal.timeout(timeoutMs),
         );

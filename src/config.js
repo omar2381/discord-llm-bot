@@ -17,6 +17,7 @@ const schema = z.object({
   AI_MAX_HISTORY: z.coerce.number().int().min(0).max(50).default(12),
   AI_TIMEOUT_MS: z.coerce.number().int().min(1000).default(60000),
   AI_RATE_LIMIT_PER_MIN: z.coerce.number().int().min(1).default(5),
+  AI_NUM_CTX: z.coerce.number().int().min(1024).max(32768).default(8192),
   AI_ALLOWED_CHANNEL_IDS: z.string().default(''),
 });
 
@@ -48,6 +49,7 @@ export function buildConfig(env = process.env) {
       maxHistory: env_.AI_MAX_HISTORY,
       timeoutMs: env_.AI_TIMEOUT_MS,
       rateLimitPerMin: env_.AI_RATE_LIMIT_PER_MIN,
+      numCtx: env_.AI_NUM_CTX,
       allowedChannelIds: Object.freeze(
         env_.AI_ALLOWED_CHANNEL_IDS.split(',')
           .map((s) => s.trim())

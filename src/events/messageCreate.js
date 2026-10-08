@@ -3,6 +3,8 @@ import { SpamTracker, findBannedWord } from '../features/automod.js';
 import { getBannedWords, getSettings } from '../features/guildSettings.js';
 import { logAction } from '../features/modlog.js';
 import { answer, canSendIn } from '../ai/index.js';
+import { campaignForChannel } from '../features/dnd/campaigns.js';
+import { footerFor, takeTurn } from '../features/dnd/play.js';
 
 export const name = Events.MessageCreate;
 
@@ -39,7 +41,55 @@ export async function execute(message, ctx) {
     }
   }
 
+  // Inside a campaign thread, plain talking is a move in the game, so the
+  // dungeon master answers and the general assistant stays out of it.
+  if (await maybePlay(message, ctx)) return;
+
   await maybeAnswer(message, ctx);
+}
+
+/**
+ * Treat a message in a campaign thread as a player action. Returns true when
+ * the message belonged to a game, whether or not the DM replied.
+ */
+async function maybePlay(message, ctx) {
+  const campaign = campaignForChannel(ctx.db, message.channelId);
+  if (!campaign) return false;
+
+  // Leading punctuation is the usual table convention for talking out of
+  // character, and commands are not actions.
+  const content = message.content.trim();
+  if (!content || /^[([/!.]/.test(content)) return true;
+  if (!canSendIn(message.channel, message.guild.members.me)) return true;
+
+  await message.channel.sendTyping().catch(() => {});
+
+  const result = await takeTurn({
+    ctx,
+    campaign,
+    action: content,
+    actor: {
+      id: message.author.id,
+      name: message.member?.displayName ?? message.author.username,
+    },
+  });
+
+  if (result.refused) {
+    await message.reply({ content: result.refused, allowedMentions: { parse: [] } });
+    return true;
+  }
+
+  const [first, ...rest] = result.chunks;
+  await message.channel.send({ content: first, allowedMentions: { parse: [] } });
+  for (const chunk of rest) {
+    await message.channel.send({ content: chunk, allowedMentions: { parse: [] } });
+  }
+
+  const footer = footerFor(result);
+  if (footer)
+    await message.channel.send({ content: footer, allowedMentions: { parse: [] } });
+
+  return true;
 }
 
 /**

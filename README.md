@@ -28,6 +28,9 @@ list and spam detection
 **AI** — `/ask`, mentioning the bot, or replying to it · `/memory
 view|forget|clear|optout|optin` · `/ai enable|disable|status`
 
+**Dungeons and Dragons** — `/campaign start|status|recap|pause|resume|end|delete|list` ·
+`/character create|sheet|rest` · `/begin`
+
 ## Setup
 
 Some of this only a human can do.
@@ -92,6 +95,55 @@ cannot borrow a moderator's authority.
 Short facts people tell it, per server, up to 50 each. `/memory view` shows
 them, `/memory forget id:<n>` removes one, `/memory clear` removes all, and
 `/memory optout` deletes everything and stops it remembering anything new.
+
+## Playing Dungeons and Dragons
+
+The bot runs the game as dungeon master.
+
+```
+/campaign start name:The Sunken Keep tone:grim and wet
+```
+
+That makes a thread. Everyone playing runs `/character create`, then `/begin`
+opens the scene. After that nobody types a command: say what you do in the
+thread and the dungeon master answers. Start a line with `(`, `[`, `.` or `!`
+to talk out of character and it will be ignored.
+
+### Why it works with a small model
+
+A 3B model cannot hold a campaign in its head. It will forget that someone is
+at two hit points, hand out the same key twice, and cheerfully announce "you
+roll a 17" without rolling anything.
+
+So it is not asked to remember. Hit points, inventory, experience, conditions,
+where the party is and what has happened live in SQLite, and the whole lot is
+rebuilt into the prompt on **every single turn**. The model narrates; the
+database remembers.
+
+The dice are the bot's. The model cannot state a roll result: it calls
+`roll_check` and waits, and the roll it gets back is shown under the narration
+so the table can see it. Damage, healing, items and experience are the same —
+the model asks, the bot does it and writes it down. If the model claims
+something in prose that it did not do with a tool, nothing happens, and the
+next turn's prompt quietly contradicts it.
+
+Long campaigns are compressed: every twenty turns the log is folded into a
+"story so far", so the prompt stays a constant size however long you play.
+`/campaign recap` prints it.
+
+### What it is not
+
+The rules are a light d20 system written from scratch — ability scores,
+proficiency, advantage, armour class, hit points, death saves, six classes. No
+spell lists, no feats, no equipment tables, no rulebook text. It is enough to
+adjudicate "can I jump the gap", which is most of what a table actually needs.
+
+A long rest is `/character rest kind:long`. Combat is narrative rather than
+gridded: there is no initiative order or movement, because a thread is a bad
+place for a battle map.
+
+Set `AI_NUM_CTX=8192` or higher; the dungeon master needs the room. A larger
+model than `qwen2.5:3b` is noticeably better here if your machine can take one.
 
 ## Running it with Docker
 
