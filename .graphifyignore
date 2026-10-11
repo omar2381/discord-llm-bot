@@ -1,0 +1,16 @@
+# Bare directory names only. A pattern with a mid-path slash is anchored to the
+# project root and will not match a nested copy.
+node_modules/
+coverage/
+data/
+graphify-out/
+.git/
+
+# Never read secrets.
+.env
+.env.*
+*.pem
+*.key
+
+# Reference material, not this project's code.
+reference/
