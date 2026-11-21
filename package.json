@@ -16,7 +16,12 @@
     "check:ai": "node scripts/check-ai.js",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
-    "test": "node --test"
+    "test": "node --test",
+    "service:install": "bash scripts/service/install.sh",
+    "service:uninstall": "bash scripts/service/uninstall.sh",
+    "service:restart": "launchctl kickstart -k gui/$(id -u)/com.omar.discord-llm-bot",
+    "service:status": "launchctl print gui/$(id -u)/com.omar.discord-llm-bot | grep -E \"state|pid|last exit|runs\"",
+    "service:logs": "tail -n 100 -F ~/Library/Logs/discord-llm-bot/bot.log | pino-pretty"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",

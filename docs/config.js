@@ -8,6 +8,7 @@ window.BOT_CONFIG = {
 
   // View Channels, Send Messages, Embed Links, Read Message History,
   // Manage Messages, Manage Roles, Kick, Ban, Timeout, External Emojis,
-  // Add Reactions, Send Polls.
-  permissions: '564049733839942',
+  // Add Reactions, Send Polls, Create Public Threads, Send Messages in Threads
+  // (the last two for D&D campaigns, which each get a thread).
+  permissions: '564358971485254',
 };

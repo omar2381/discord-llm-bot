@@ -612,3 +612,12 @@ _(The agent records any changes from this plan here, with a one-line reason.)_
 - 2026-11-21: Destructive tool calls put a bot-written "Waiting for your confirmation"
   list above the model's text, so the button says what it does; at most five per answer
   (Discord's limit on button rows).
+- 2026-11-21: Runs around the clock as a macOS LaunchAgent (`scripts/service/`) on the
+  same Mac as Ollama, not in a free cloud host, because the AI half needs the local
+  model. Unfixable startup problems (no token, bad token, disallowed intents) exit 0 so
+  launchd does not loop; `WatchPaths` on `.env` starts it again once fixed.
+- 2026-11-21: An unreachable Ollama raises `OllamaUnavailableError` and both the
+  assistant and the dungeon master answer "offline" instead of a generic failure; an
+  unpulled model is flagged as `modelMissing`. The ready event logs Ollama's health.
+- 2026-11-21: The invite asks for Create Public Threads and Send Messages in Threads,
+  which `/campaign start` needs.

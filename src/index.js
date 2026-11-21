@@ -11,7 +11,24 @@ import { createAi } from './ai/index.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-const config = getConfig();
+// Problems no restart can fix (no token, a revoked token, an intent switched
+// off in the Developer Portal) exit 0, so the LaunchAgent, which restarts only
+// on failure, does not retry every ten seconds forever. Everything else, such
+// as Discord or the network being down, exits non-zero and is retried.
+const UNRECOVERABLE = new Set(['TokenInvalid', 'DisallowedIntents']);
+function stopForGood(message, error) {
+  logger.fatal({ err: error }, `${message} Not restarting until this is fixed.`);
+  logger.flush?.();
+  setTimeout(() => process.exit(0), 200);
+}
+
+let config;
+try {
+  config = getConfig();
+} catch (error) {
+  stopForGood('The configuration in .env is incomplete.', error);
+  await new Promise(() => {});
+}
 const db = openDatabase(config.databasePath);
 
 const client = new Client({
@@ -106,4 +123,34 @@ function shutdown(signal) {
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
-await client.login(config.token);
+const TOKEN_HINT =
+  'Discord rejected DISCORD_TOKEN; reset it under Bot in the Developer Portal and update .env.';
+const INTENTS_HINT =
+  'Discord refused the privileged intents; turn on Server Members Intent and Message Content Intent under Bot in the Developer Portal.';
+
+// discord.js gives up on its own after these gateway close codes and then sits
+// idle, connected to nothing. Leave rather than look alive.
+client.on(Events.ShardDisconnect, (event) => {
+  if (event.code === 4004) stopForGood(TOKEN_HINT, { code: event.code });
+  else if (event.code === 4013 || event.code === 4014)
+    stopForGood(INTENTS_HINT, { code: event.code });
+  else {
+    logger.fatal(
+      { code: event.code },
+      'gateway gave up; exiting so the service restarts',
+    );
+    process.exit(1);
+  }
+});
+
+try {
+  await client.login(config.token);
+} catch (error) {
+  if (UNRECOVERABLE.has(error.code)) {
+    stopForGood(error.code === 'TokenInvalid' ? TOKEN_HINT : INTENTS_HINT, error);
+  } else {
+    logger.fatal({ err: error }, 'login failed; exiting so the service restarts');
+    db.close();
+    process.exit(1);
+  }
+}

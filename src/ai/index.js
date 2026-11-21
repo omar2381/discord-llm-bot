@@ -4,7 +4,7 @@ import {
   ButtonStyle,
   PermissionFlagsBits,
 } from 'discord.js';
-import { createOllama, OllamaBusyError } from './ollama.js';
+import { createOllama, OllamaBusyError, OllamaUnavailableError } from './ollama.js';
 import { PendingActions } from './pending.js';
 import { runAgent } from './agent.js';
 import { AI_DISABLED_MESSAGE } from './prompts.js';
@@ -144,6 +144,14 @@ export async function answer({ ctx, message, prompt, member, channel, guild }) {
     }
     if (error.name === 'TimeoutError' || error.name === 'AbortError') {
       return { refused: 'That took too long. Try something shorter.' };
+    }
+    if (error instanceof OllamaUnavailableError) {
+      ctx.logger.warn({ err: error }, 'AI asked while Ollama is down');
+      return { refused: 'The AI is offline right now. Everything else still works.' };
+    }
+    if (error.modelMissing) {
+      ctx.logger.error({ err: error }, 'OLLAMA_MODEL is not pulled');
+      return { refused: 'The AI model is not installed on the server yet.' };
     }
     if (error.contextTooSmall) {
       ctx.logger.warn({ err: error }, 'AI prompt exceeds AI_NUM_CTX');

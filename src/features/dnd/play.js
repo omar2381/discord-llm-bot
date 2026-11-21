@@ -1,4 +1,4 @@
-import { OllamaBusyError } from '../../ai/ollama.js';
+import { OllamaBusyError, OllamaUnavailableError } from '../../ai/ollama.js';
 import { playTurn, summariseCampaign } from '../../ai/dm/index.js';
 import { getCampaign, needsSummary } from './campaigns.js';
 import { partyFor } from './characters.js';
@@ -62,6 +62,20 @@ export async function takeTurn({ ctx, campaign, action, actor }) {
     }
     if (error.name === 'TimeoutError' || error.name === 'AbortError') {
       return { refused: 'That took too long. Try saying it more plainly.' };
+    }
+    if (error instanceof OllamaUnavailableError) {
+      ctx.logger.warn(
+        { err: error, campaign: campaign.id },
+        'DM asked while Ollama is down',
+      );
+      return {
+        refused:
+          'The dungeon master is away from the table (the AI is offline). Try again later.',
+      };
+    }
+    if (error.modelMissing) {
+      ctx.logger.error({ err: error }, 'OLLAMA_MODEL is not pulled');
+      return { refused: 'The dungeon master model is not installed on the server yet.' };
     }
     if (error.contextTooSmall) {
       ctx.logger.warn(

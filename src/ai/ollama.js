@@ -18,6 +18,21 @@ export class OllamaError extends Error {
     this.status = status;
     // Ollama 0.33+ refuses a prompt longer than num_ctx (it used to truncate).
     this.contextTooSmall = /exceeds the available context size/i.test(message);
+    // The configured OLLAMA_MODEL has not been pulled on this server.
+    this.modelMissing = status === 404 && /not found/i.test(message);
+  }
+}
+
+/**
+ * Ollama could not be reached at all: not running, restarting, or the host is
+ * asleep. Kept apart from OllamaError so callers can say "offline" rather than
+ * "something went wrong", and log it as the expected condition it is.
+ */
+export class OllamaUnavailableError extends Error {
+  constructor(cause) {
+    super(`Ollama is unreachable: ${cause?.cause?.code ?? cause?.message ?? cause}`);
+    this.name = 'OllamaUnavailableError';
+    this.cause = cause;
   }
 }
 
@@ -99,12 +114,20 @@ export function createOllama({
   const endpoint = String(url).replace(/\/+$/, '');
 
   async function post(path, body, signal) {
-    const response = await fetch(`${endpoint}${path}`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-      signal,
-    });
+    let response;
+    try {
+      response = await fetch(`${endpoint}${path}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+        signal,
+      });
+    } catch (error) {
+      // A timeout is the caller's to explain; anything else here means the
+      // connection itself failed.
+      if (error?.name === 'TimeoutError' || error?.name === 'AbortError') throw error;
+      throw new OllamaUnavailableError(error);
+    }
     if (!response.ok) {
       // The body says why ("model not found", "request exceeds the available
       // context size"); the status alone leaves the log useless.

@@ -46,7 +46,10 @@ Some of this only a human can do.
 6. **OAuth2 → URL Generator**: scopes `bot` and `applications.commands`;
    permissions View Channels, Send Messages, Embed Links, Read Message History,
    Manage Messages, Manage Roles, Kick Members, Ban Members, Moderate Members,
-   Use External Emojis, Add Reactions, Send Polls. Open the URL and add the bot.
+   Use External Emojis, Add Reactions, Send Polls, Create Public Threads, Send
+   Messages in Threads. Open the URL and add the bot. Or fill in the
+   Application ID below and open this, which carries the same set:
+   `https://discord.com/oauth2/authorize?client_id=<APPLICATION_ID>&scope=bot+applications.commands&permissions=564358971485254`
 7. Server Settings → Roles: drag the bot's role **above** any role it should
    assign or moderate. Discord enforces that hierarchy and the bot cannot work
    around it.
@@ -144,6 +147,36 @@ place for a battle map.
 
 Set `AI_NUM_CTX=8192` or higher; the dungeon master needs the room. A larger
 model than `qwen2.5:3b` is noticeably better here if your machine can take one.
+
+## Running it around the clock (macOS)
+
+The free way to keep it up is this Mac, beside Ollama: a LaunchAgent starts it
+at login, restarts it after a crash or a lost connection, and logs to
+`~/Library/Logs/discord-llm-bot/`. No hosting bill, and the AI stays local. A
+free cloud host would run the bot but not a model worth talking to, so it
+would lose `/ask` and the dungeon master.
+
+```bash
+npm run service:install    # writes ~/Library/LaunchAgents/com.omar.discord-llm-bot.plist
+npm run service:status     # state, pid, last exit code
+npm run service:logs       # follow the log, pretty-printed
+npm run service:restart    # after a git pull or an .env change
+npm run service:uninstall
+```
+
+How it behaves:
+
+- **No token yet**: it logs that and stops cleanly. Saving `.env` starts it.
+- **Bad token or intents switched off**: it logs exactly which, and stops
+  rather than retrying every 30 seconds. Fix it, save `.env`, and it starts.
+- **Crash, network or Discord outage**: exits non-zero; launchd starts it again
+  (at most every 30 seconds).
+- **Ollama down**: the bot stays up. `/ask`, mentions and the dungeon master
+  answer that the AI is offline; everything else works. The startup log says
+  whether Ollama and the model were found.
+- **Node upgraded by Homebrew**: `run.sh` rebuilds `better-sqlite3` first.
+- It only runs while the Mac is on and Omar is logged in; the logs rotate at
+  10 MB on each start.
 
 ## Running it with Docker
 

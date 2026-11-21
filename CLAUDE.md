@@ -63,6 +63,13 @@ migration that has already run.
 Tests mock `fetch` and use `:memory:` SQLite. Do not try to mock all of
 discord.js — pass minimal fake objects instead.
 
+## Running for real
+
+On Omar's Mac as the LaunchAgent `com.omar.discord-llm-bot` (`npm run
+service:install`, logs in `~/Library/Logs/discord-llm-bot/`), next to the
+Homebrew Ollama service, with `OLLAMA_MODEL=qwen3:30b-instruct`. README,
+"Running it around the clock", has the details.
+
 ## Not yet verified
 
 Nothing here has run against a real Discord server. Intents, role hierarchy,
