@@ -63,6 +63,16 @@ export async function takeTurn({ ctx, campaign, action, actor }) {
     if (error.name === 'TimeoutError' || error.name === 'AbortError') {
       return { refused: 'That took too long. Try saying it more plainly.' };
     }
+    if (error.contextTooSmall) {
+      ctx.logger.warn(
+        { err: error, campaign: campaign.id },
+        'DM prompt exceeds AI_NUM_CTX',
+      );
+      return {
+        refused:
+          'The story has grown longer than I can hold. Ask the server owner to raise AI_NUM_CTX.',
+      };
+    }
     ctx.logger.error({ err: error, campaign: campaign.id }, 'dungeon master failed');
     return { refused: 'The dungeon master has lost their notes. Try again.' };
   } finally {

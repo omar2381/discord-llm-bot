@@ -16,7 +16,30 @@ export class OllamaError extends Error {
     super(message);
     this.name = 'OllamaError';
     this.status = status;
+    // Ollama 0.33+ refuses a prompt longer than num_ctx (it used to truncate).
+    this.contextTooSmall = /exceeds the available context size/i.test(message);
   }
+}
+
+/**
+ * The human-readable reason from an Ollama error body. Ollama wraps it as
+ * {"error": "..."}, and for some errors (an over-long prompt) that string is
+ * itself the JSON of the runner's error, {"error": {"message": "..."}}.
+ */
+export function ollamaReason(body) {
+  let value = String(body ?? '').trim();
+  for (let depth = 0; depth < 3; depth++) {
+    let parsed;
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      break;
+    }
+    const inner = parsed?.error?.message ?? parsed?.error ?? parsed?.message;
+    if (typeof inner !== 'string') break;
+    value = inner.trim();
+  }
+  return value.slice(0, 300);
 }
 
 /**
@@ -83,8 +106,11 @@ export function createOllama({
       signal,
     });
     if (!response.ok) {
+      // The body says why ("model not found", "request exceeds the available
+      // context size"); the status alone leaves the log useless.
+      const reason = ollamaReason(await response.text().catch(() => ''));
       throw new OllamaError(
-        `Ollama returned ${response.status} ${response.statusText}`,
+        `Ollama returned ${response.status}${reason ? `: ${reason}` : ` ${response.statusText}`}`,
         response.status,
       );
     }

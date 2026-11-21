@@ -12,6 +12,7 @@ import {
   findByName,
   healCharacter,
   modifiersFor,
+  partyFor,
   proficiencyFor,
   removeItem,
   setConditions,
@@ -270,7 +271,9 @@ export const DM_TOOLS = [
       ['amount'],
     ),
     execute(args, ctx) {
-      const results = ctx.party.map((character) => ({
+      // Read the party now, not from the turn's snapshot: a damage or heal
+      // earlier in this turn changed hit points, and awardXp writes them back.
+      const results = partyFor(ctx.db, ctx.campaign.id).map((character) => ({
         name: character.name,
         ...awardXp(ctx.db, character, args.amount),
       }));

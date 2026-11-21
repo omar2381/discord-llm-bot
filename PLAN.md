@@ -603,3 +603,12 @@ _(The agent records any changes from this plan here, with a one-line reason.)_
 - 2026-10-06: `purgeOldGames` is written and exported from `src/components/rps.js` but
   is not yet called on a timer; wiring the hourly interval is left to the phase that
   adds the scheduler.
+- 2026-11-21: The reminder loop starts on `ClientReady`, not at module load. Before
+  login every fetch throws, so the catch-up pass deleted reminders that came due while
+  the bot was offline. Passes no longer overlap.
+- 2026-11-21: `add_role`/`remove_role` check the asker's rank (the role must be below
+  their highest role, the target below them unless it is themselves) and read the
+  server-wide Manage Roles, not the channel's "Manage Permissions" overwrite.
+- 2026-11-21: Destructive tool calls put a bot-written "Waiting for your confirmation"
+  list above the model's text, so the button says what it does; at most five per answer
+  (Discord's limit on button rows).

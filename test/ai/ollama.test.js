@@ -6,6 +6,7 @@ import {
   SerialQueue,
   createOllama,
   normaliseMessage,
+  ollamaReason,
 } from '../../src/ai/ollama.js';
 
 function mockFetch(handler) {
@@ -152,4 +153,28 @@ test('a failing task does not wedge the queue', async () => {
     }),
   );
   assert.equal(await queue.run(async () => 'still works'), 'still works');
+});
+
+test("an over-long prompt reports Ollama's own reason and is flagged", async () => {
+  // The body Ollama 0.33 sends when a prompt exceeds num_ctx (captured locally).
+  const body =
+    '{"error":"{\\"error\\":{\\"code\\":400,\\"message\\":\\"request (2910 tokens) exceeds the available context size (512 tokens), try increasing it\\",\\"type\\":\\"exceed_context_size_error\\"}}"}';
+  mockFetch(async () => new Response(body, { status: 400, statusText: 'Bad Request' }));
+  const ollama = createOllama({ url: 'http://x', model: 'm' });
+  await assert.rejects(ollama.chat({ messages: [] }), (error) => {
+    assert.ok(error instanceof OllamaError);
+    assert.equal(error.status, 400);
+    assert.match(
+      error.message,
+      /^Ollama returned 400: request \(2910 tokens\) exceeds the available context size/,
+    );
+    assert.equal(error.contextTooSmall, true);
+    return true;
+  });
+});
+
+test('ollamaReason reads plain, wrapped and empty bodies', () => {
+  assert.equal(ollamaReason('{"error":"model \'m\' not found"}'), "model 'm' not found");
+  assert.equal(ollamaReason('plain text'), 'plain text');
+  assert.equal(ollamaReason(''), '');
 });

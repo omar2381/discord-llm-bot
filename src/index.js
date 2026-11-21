@@ -57,23 +57,29 @@ for (const { path, module } of await loadModules(join(here, 'events'))) {
 logger.info({ commands: commands.size, components: components.size }, 'modules loaded');
 
 // Deliver reminders, including any that came due while the bot was offline.
-const stopReminders = startReminderLoop({
-  db,
-  logger,
-  async send(reminder) {
-    const channel = await client.channels.fetch(reminder.channel_id).catch(() => null);
-    const content = `<@${reminder.user_id}> reminder: ${reminder.message}`;
-    if (channel?.isTextBased()) {
-      await channel.send({
-        content,
-        allowedMentions: { users: [reminder.user_id] },
-      });
-      return;
-    }
-    // The channel is gone or unreadable; fall back to a direct message.
-    const user = await client.users.fetch(reminder.user_id);
-    await user.send(`Reminder: ${reminder.message}`);
-  },
+// Only once logged in: before that every channel and user fetch throws
+// ("Expected token to be set"), and the catch-up pass deleted each reminder
+// that came due while the bot was down as undeliverable.
+let stopReminders = () => {};
+client.once(Events.ClientReady, () => {
+  stopReminders = startReminderLoop({
+    db,
+    logger,
+    async send(reminder) {
+      const channel = await client.channels.fetch(reminder.channel_id).catch(() => null);
+      const content = `<@${reminder.user_id}> reminder: ${reminder.message}`;
+      if (channel?.isTextBased()) {
+        await channel.send({
+          content,
+          allowedMentions: { users: [reminder.user_id] },
+        });
+        return;
+      }
+      // The channel is gone or unreadable; fall back to a direct message.
+      const user = await client.users.fetch(reminder.user_id);
+      await user.send(`Reminder: ${reminder.message}`);
+    },
+  });
 });
 
 // Abandoned rock-paper-scissors challenges would otherwise accumulate forever.

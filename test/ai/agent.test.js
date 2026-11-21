@@ -237,3 +237,17 @@ test('a confirmed action re-checks permission before running', async () => {
   });
   assert.match(lost.error, /no longer have permission/);
 });
+
+test('at most five actions wait for confirmation from one answer', async () => {
+  const call = {
+    name: 'timeout_member',
+    arguments: { user_id: '123456789012345678', minutes: 5, reason: 'spam' },
+  };
+  const ollama = scriptedOllama([
+    { content: '', toolCalls: Array.from({ length: 7 }, () => call) },
+    { content: 'Confirm below.', toolCalls: [] },
+  ]);
+  const context = base({ member: member('mod', [PermissionFlagsBits.ModerateMembers]) });
+  const result = await runAgent({ ...context, ollama, prompt: 'timeout them all' });
+  assert.equal(result.pending.length, 5);
+});

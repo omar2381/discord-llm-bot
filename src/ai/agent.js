@@ -4,6 +4,7 @@ import { recallFacts } from './memory.js';
 import { RECALL_LIMIT } from './memory.js';
 
 export const MAX_ITERATIONS = 4;
+export const MAX_CONFIRMATIONS = 5;
 export const MAX_HISTORY_CHARS = 500;
 
 export { AI_DISABLED_MESSAGE };
@@ -121,6 +122,12 @@ async function runToolCall({ call, toolCtx, pending, confirmations, member, chan
   }
 
   if (tool.destructive) {
+    // Discord shows at most five rows of buttons on one message.
+    if (confirmations.length >= MAX_CONFIRMATIONS) {
+      return {
+        error: `At most ${MAX_CONFIRMATIONS} actions can wait for confirmation at once.`,
+      };
+    }
     const description = await tool.describe?.(parsed.data, toolCtx);
     const id = pending.add({
       requesterId: member.id,

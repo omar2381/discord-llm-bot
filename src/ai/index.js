@@ -76,17 +76,32 @@ export async function recentHistory(channel, { limit, botId, excludeId }) {
     }));
 }
 
-export function confirmationRow(pending) {
+export function confirmationRow(pending, number = null) {
+  const suffix = number ? ` ${number}` : '';
   return new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`aiconfirm:yes:${pending.id}`)
-      .setLabel('Confirm')
+      .setLabel(`Confirm${suffix}`)
       .setStyle(ButtonStyle.Danger),
     new ButtonBuilder()
       .setCustomId(`aiconfirm:no:${pending.id}`)
-      .setLabel('Cancel')
+      .setLabel(`Cancel${suffix}`)
       .setStyle(ButtonStyle.Secondary),
   );
+}
+
+/**
+ * What the buttons will do, written by the bot rather than the model, and put
+ * first in the message that carries them. The model's text alone could say
+ * "press Confirm to see the summary" over a button that deletes messages.
+ */
+export function confirmationNotice(pending) {
+  if (!pending.length) return '';
+  const numbered = pending.length > 1;
+  const lines = pending.map(
+    (item, i) => `${numbered ? `${i + 1}. ` : '- '}${item.description}`,
+  );
+  return `**Waiting for your confirmation** (only you can press it):\n${lines.join('\n')}`;
 }
 
 /**
@@ -130,12 +145,20 @@ export async function answer({ ctx, message, prompt, member, channel, guild }) {
     if (error.name === 'TimeoutError' || error.name === 'AbortError') {
       return { refused: 'That took too long. Try something shorter.' };
     }
+    if (error.contextTooSmall) {
+      ctx.logger.warn({ err: error }, 'AI prompt exceeds AI_NUM_CTX');
+      return { refused: 'That is more than I can read at once. Ask something shorter.' };
+    }
     ctx.logger.error({ err: error }, 'AI failed');
     return { refused: 'The AI is not answering right now.' };
   }
 
-  const chunks = splitMessage(result.content);
-  const rows = result.pending.map((item) => confirmationRow(item));
+  const notice = confirmationNotice(result.pending);
+  const chunks = splitMessage(notice ? `${notice}\n\n${result.content}` : result.content);
+  const numbered = result.pending.length > 1;
+  const rows = result.pending.map((item, i) =>
+    confirmationRow(item, numbered ? i + 1 : null),
+  );
 
   return {
     chunks: chunks.length ? chunks : ['...'],

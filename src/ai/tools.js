@@ -4,6 +4,7 @@ import {
   canModerate,
   botCanManageRole,
   isDangerousRole,
+  isAbove,
 } from '../features/permissions.js';
 import { createReminder } from '../features/reminders.js';
 import { parseDuration, MAX_DURATION_MS, MIN_DURATION_MS } from '../util/duration.js';
@@ -293,6 +294,9 @@ export const TOOLS = [
       ['user_id', 'role_id'],
     ),
     requiredPermission: PermissionFlagsBits.ManageRoles,
+    // Manage Roles is a server permission. In a channel the same bit is
+    // "Manage Permissions" and can be granted by a channel overwrite.
+    guildWide: true,
     destructive: true,
     describe(args, ctx) {
       const role = ctx.guild.roles.cache.get(args.role_id);
@@ -314,6 +318,9 @@ export const TOOLS = [
       ['user_id', 'role_id'],
     ),
     requiredPermission: PermissionFlagsBits.ManageRoles,
+    // Manage Roles is a server permission. In a channel the same bit is
+    // "Manage Permissions" and can be granted by a channel overwrite.
+    guildWide: true,
     destructive: true,
     describe(args, ctx) {
       const role = ctx.guild.roles.cache.get(args.role_id);
@@ -337,8 +344,33 @@ async function changeRole({ user_id: userId, role_id: roleId }, ctx, action) {
   const member = await ctx.guild.members.fetch(userId).catch(() => null);
   if (!member) return { error: 'No such member.' };
 
+  // The asker's own rank, not the bot's: Discord would refuse this person a
+  // role at or above their highest, or a change to someone who outranks them.
+  const asker = askerMayChangeRole({
+    actor: ctx.member,
+    target: member,
+    role,
+    ownerId: ctx.guild.ownerId,
+  });
+  if (!asker.ok) return { error: asker.reason };
+
   await member.roles[action](role, `${ctx.member.user.tag} via AI`);
   return { status: action === 'add' ? 'role_added' : 'role_removed', role: role.name };
+}
+
+/** Does the asker outrank the role, and the member (unless it is themselves)? */
+export function askerMayChangeRole({ actor, target, role, ownerId }) {
+  if (actor.id === ownerId) return { ok: true };
+  if (role.position >= actor.roles.highest.position) {
+    return {
+      ok: false,
+      reason: 'That role is not below the highest role of the person asking.',
+    };
+  }
+  if (target.id !== actor.id && !isAbove(actor, target)) {
+    return { ok: false, reason: 'That member is not below the person asking.' };
+  }
+  return { ok: true };
 }
 
 export const TOOLS_BY_NAME = new Map(TOOLS.map((tool) => [tool.name, tool]));
@@ -354,6 +386,8 @@ export function toolSchemas() {
  */
 export function memberMayUse(tool, { member, channel }) {
   if (!tool.requiredPermission) return true;
-  const permissions = channel?.permissionsFor?.(member) ?? member.permissions;
+  const permissions = tool.guildWide
+    ? member.permissions
+    : (channel?.permissionsFor?.(member) ?? member.permissions);
   return permissions.has(tool.requiredPermission);
 }

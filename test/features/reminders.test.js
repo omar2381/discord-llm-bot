@@ -107,3 +107,27 @@ test('a reminder that fails to send is still removed, so it cannot loop forever'
   assert.equal(warnings.length, 1);
   d.close();
 });
+
+test('a pass that outlasts the interval is not overlapped, so nothing is sent twice', async () => {
+  const d = db();
+  createReminder(d, { ...base, userId: 'u1', dueAt: Date.now() - 2000 });
+  createReminder(d, { ...base, userId: 'u1', dueAt: Date.now() - 1000 });
+
+  const sent = [];
+  const stop = startReminderLoop({
+    db: d,
+    // Each send takes longer than the interval.
+    send: async (reminder) => {
+      sent.push(reminder.id);
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    },
+    intervalMs: 5,
+  });
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  stop();
+
+  assert.equal(sent.length, 2);
+  assert.equal(new Set(sent).size, 2, 'each reminder delivered once');
+  assert.equal(listReminders(d, 'u1').length, 0);
+  d.close();
+});

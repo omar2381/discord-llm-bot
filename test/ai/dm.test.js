@@ -309,3 +309,25 @@ test('the summary is written back to the campaign', async () => {
   assert.equal(campaignForChannel(db, 't1').summary, summary);
   db.close();
 });
+
+test('experience awarded after damage in the same turn keeps the damage', async () => {
+  const { db, campaign } = setup();
+  const before = partyFor(db, campaign.id)[0];
+
+  const ollama = scripted([
+    {
+      content: '',
+      toolCalls: [
+        { name: 'damage', arguments: { character: 'Thorn', amount: 3 } },
+        { name: 'award_xp', arguments: { amount: 10 } },
+      ],
+    },
+    { content: 'Ouch, but well fought.', toolCalls: [] },
+  ]);
+
+  await playTurn({ ollama, db, campaign, action: 'I charge.', actor });
+  const after = partyFor(db, campaign.id)[0];
+  assert.equal(after.xp, 10);
+  assert.equal(after.hp_current, before.hp_current - 3, 'the damage was not undone');
+  db.close();
+});

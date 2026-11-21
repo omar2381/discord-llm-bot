@@ -54,14 +54,24 @@ export function formatReminderLine(reminder, now = Date.now()) {
  * is injected so the loop can be tested without a Discord client.
  */
 export function startReminderLoop({ db, logger, send, intervalMs = 30000 }) {
+  // One pass at a time: a pass that outlasts the interval (a backlog after
+  // downtime, a slow Discord) would otherwise overlap the next, and both
+  // would send the reminders neither had deleted yet.
+  let running = false;
   const tick = async () => {
-    for (const reminder of dueReminders(db)) {
-      try {
-        await send(reminder);
-      } catch (error) {
-        logger?.warn({ err: error, id: reminder.id }, 'could not deliver reminder');
+    if (running) return;
+    running = true;
+    try {
+      for (const reminder of dueReminders(db)) {
+        try {
+          await send(reminder);
+        } catch (error) {
+          logger?.warn({ err: error, id: reminder.id }, 'could not deliver reminder');
+        }
+        deleteReminder(db, reminder.id);
       }
-      deleteReminder(db, reminder.id);
+    } finally {
+      running = false;
     }
   };
 
