@@ -1,6 +1,7 @@
 import { MessageFlags } from 'discord.js';
 import { executeConfirmed } from '../ai/agent.js';
 import { logAction } from '../features/modlog.js';
+import { modlogActionFor } from '../ai/tools.js';
 
 export const prefix = 'aiconfirm';
 
@@ -66,7 +67,7 @@ export async function execute(interaction, ctx) {
   });
 
   await logAction(ctx, interaction.guild, {
-    action: claim.action.toolName.includes('timeout') ? 'timeout' : 'automod',
+    action: modlogActionFor(claim.action.toolName),
     actor: interaction.user,
     reason: 'Confirmed from an AI suggestion',
     detail: claim.action.description,

@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PermissionFlagsBits } from 'discord.js';
-import { askerMayChangeRole, memberMayUse, TOOLS_BY_NAME } from '../../src/ai/tools.js';
+import {
+  askerMayChangeRole,
+  memberMayUse,
+  modlogActionFor,
+  TOOLS_BY_NAME,
+} from '../../src/ai/tools.js';
 import { confirmationNotice } from '../../src/ai/index.js';
 
 const person = (id, position) => ({ id, roles: { highest: { position } } });
@@ -91,4 +96,15 @@ test('the bot, not the model, says what each button will do', () => {
   ]);
   assert.match(two, /1\. give/);
   assert.match(two, /2\. take/);
+});
+
+test('a confirmed AI action is logged under its own heading, never as automod', () => {
+  assert.equal(modlogActionFor('timeout_member'), 'timeout');
+  assert.equal(modlogActionFor('delete_messages'), 'purge');
+  assert.equal(modlogActionFor('add_role'), 'role');
+  assert.equal(modlogActionFor('remove_role'), 'role');
+  assert.equal(modlogActionFor('unknown_tool'), 'AI action');
+  for (const tool of TOOLS_BY_NAME.values()) {
+    if (tool.destructive) assert.ok(tool.modlogAction, `${tool.name} has a heading`);
+  }
 });

@@ -229,6 +229,7 @@ export const TOOLS = [
     ),
     requiredPermission: PermissionFlagsBits.ModerateMembers,
     destructive: true,
+    modlogAction: 'timeout',
     async describe(args, ctx) {
       const member = await ctx.guild.members.fetch(args.user_id).catch(() => null);
       return `time out ${member ? `**${member.displayName}**` : args.user_id} for ${args.minutes} minute(s)${args.reason ? ` (${args.reason})` : ''}`;
@@ -270,6 +271,7 @@ export const TOOLS = [
     ),
     requiredPermission: PermissionFlagsBits.ManageMessages,
     destructive: true,
+    modlogAction: 'purge',
     describe(args) {
       return `delete ${args.count} message(s)${args.user_id ? ` from <@${args.user_id}>` : ''}`;
     },
@@ -298,6 +300,7 @@ export const TOOLS = [
     // "Manage Permissions" and can be granted by a channel overwrite.
     guildWide: true,
     destructive: true,
+    modlogAction: 'role',
     describe(args, ctx) {
       const role = ctx.guild.roles.cache.get(args.role_id);
       return `give <@${args.user_id}> the role **${role?.name ?? args.role_id}**`;
@@ -322,6 +325,7 @@ export const TOOLS = [
     // "Manage Permissions" and can be granted by a channel overwrite.
     guildWide: true,
     destructive: true,
+    modlogAction: 'role',
     describe(args, ctx) {
       const role = ctx.guild.roles.cache.get(args.role_id);
       return `take **${role?.name ?? args.role_id}** away from <@${args.user_id}>`;
@@ -374,6 +378,14 @@ export function askerMayChangeRole({ actor, target, role, ownerId }) {
 }
 
 export const TOOLS_BY_NAME = new Map(TOOLS.map((tool) => [tool.name, tool]));
+
+/**
+ * The mod-log heading for a confirmed destructive tool. A person pressed
+ * Confirm, so it is not automod, whatever the tool.
+ */
+export function modlogActionFor(toolName) {
+  return TOOLS_BY_NAME.get(toolName)?.modlogAction ?? 'AI action';
+}
 
 export function toolSchemas() {
   return TOOLS.map((tool) => tool.jsonSchema);

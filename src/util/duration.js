@@ -21,7 +21,9 @@ export function parseDuration(input) {
   for (const match of text.matchAll(PART)) {
     total += Number(match[1]) * UNITS[match[2]];
     matched++;
-    consumed += match[0].length;
+    // Count without whitespace, to compare like with like below: the pattern
+    // allows "10 m", and the full text is measured with its spaces removed.
+    consumed += match[0].replace(/\s+/g, '').length;
   }
 
   if (!matched) return null;

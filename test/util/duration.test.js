@@ -15,6 +15,12 @@ test('units combine, in any case, with or without spaces', () => {
   assert.equal(parseDuration('2H30M'), 9_000_000);
 });
 
+test('a space between the number and its unit is allowed', () => {
+  assert.equal(parseDuration('10 m'), 600_000);
+  assert.equal(parseDuration('2 h 30 m'), 9_000_000);
+  assert.equal(parseDuration('10 m please'), null);
+});
+
 test('junk is rejected rather than partly parsed', () => {
   for (const input of [
     '',
