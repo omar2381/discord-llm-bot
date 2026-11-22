@@ -621,3 +621,5 @@ _(The agent records any changes from this plan here, with a one-line reason.)_
   unpulled model is flagged as `modelMissing`. The ready event logs Ollama's health.
 - 2026-11-21: The invite asks for Create Public Threads and Send Messages in Threads,
   which `/campaign start` needs.
+- 2026-11-22: Answering one AI confirmation removes only that action's buttons and adds a
+  status line under the reply (it used to replace the message and drop every other row).

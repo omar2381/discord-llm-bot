@@ -3,6 +3,28 @@ import { executeConfirmed } from '../ai/agent.js';
 import { logAction } from '../features/modlog.js';
 import { modlogActionFor } from '../ai/tools.js';
 
+const DISCORD_LIMIT = 2000;
+
+/**
+ * The message after one of its pending actions was answered: that action's
+ * buttons go, the others stay (one answer used to wipe every row, so a second
+ * suggested action could no longer be confirmed or cancelled), and a status
+ * line is added under the text. Pure, so it can be tested without Discord.
+ */
+export function afterAnswer(message, id, status) {
+  const rows = (message?.components ?? [])
+    .filter(
+      (row) =>
+        !(row.components ?? []).some((c) =>
+          String(c.customId ?? c.custom_id ?? '').endsWith(`:${id}`),
+        ),
+    )
+    .map((row) => (typeof row.toJSON === 'function' ? row.toJSON() : row));
+  const base = String(message?.content ?? '').trim();
+  const joined = base ? `${base}\n\n${status}` : status;
+  return { content: joined.length <= DISCORD_LIMIT ? joined : status, components: rows };
+}
+
 export const prefix = 'aiconfirm';
 
 export async function execute(interaction, ctx) {
@@ -34,7 +56,10 @@ export async function execute(interaction, ctx) {
   }
 
   if (decision !== 'yes') {
-    return interaction.update({ content: 'Cancelled.', components: [] });
+    return interaction.update({
+      ...afterAnswer(interaction.message, id, `Cancelled: ${claim.action.description}.`),
+      allowedMentions: { parse: [] },
+    });
   }
 
   await interaction.deferUpdate();
@@ -55,14 +80,13 @@ export async function execute(interaction, ctx) {
 
   if (result.error) {
     return interaction.editReply({
-      content: `Not done: ${result.error}`,
-      components: [],
+      ...afterAnswer(interaction.message, id, `Not done: ${result.error}`),
+      allowedMentions: { parse: [] },
     });
   }
 
   await interaction.editReply({
-    content: `Done: ${claim.action.description}.`,
-    components: [],
+    ...afterAnswer(interaction.message, id, `Done: ${claim.action.description}.`),
     allowedMentions: { parse: [] },
   });
 
